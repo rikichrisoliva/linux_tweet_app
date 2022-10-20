@@ -1,0 +1,50 @@
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: myapp
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment",
+      "metadata":{"annotations":{},"name":"nginx-deployment","namespace":"default"},
+      "spec":{"minReadySeconds":5,"selector":{"matchLabels":{"app":nginx}},"template":{"metadata":{"labels":{"app":"nginx"}},
+      "spec":{"containers":[{"image":"nginx:1.14.2","name":"nginx",
+      "ports":[{"containerPort":80}]}]}}}}
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: myapp
+  replicas: 1 # tells deployment to run 1 pods matching the template
+  template: # create pods using pod definition in this template
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: rikichrisoliva/linux_tweet_app-image
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+  namespace: default
+  labels:
+    app: myapp
+spec:
+  ports:
+  - name: http1
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  - name: http2
+    port: 443
+    protocol: TCP
+    targetPort: 443
+  selector:
+    app: myapp

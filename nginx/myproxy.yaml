@@ -1,0 +1,55 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myproxy
+spec:
+  selector:
+    matchLabels:
+      app: myapp
+  replicas: 1 # tells deployment to run 1 pods matching the template
+  template: # create pods using pod definition in this template
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      volumes:
+      - name: ssl
+        secret:
+          secretName: ssl
+      containers:
+      - name: myproxy
+        image: rikichrisoliva/nginx
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        volumeMounts:
+        - mountPath: "/etc/nginx/certs"
+          name: ssl
+          readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myproxy
+  namespace: default
+  labels:
+    app: myapp
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  externalTrafficPolicy: Local
+  ports:
+  - name: http1
+    port: 80
+    protocol: TCP
+    targetPort: 80
+    nodePort: 32766
+  - name: http2
+    port: 443
+    protocol: TCP
+    targetPort: 443
+    nodePort: 32767
+  selector:
+    app: myapp
+  type: LoadBalancer
